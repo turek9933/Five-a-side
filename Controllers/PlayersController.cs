@@ -177,7 +177,7 @@ namespace Five_a_side.Controllers
 
             List<Player> players = Player.LoadPlayersFromFile(file_local_players_name);
 
-            if (!players.Any(p => p.Id == temp_player.Id))
+            if (!players.Any(p => p.Id == tempPlayer.Id))
             {
                 players.Add(temp_player);
                 Player.SavePlayersToFile(players, Path.Combine(Directory.GetCurrentDirectory(), file_local_players_name));
