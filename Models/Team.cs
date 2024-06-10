@@ -1,6 +1,4 @@
 ﻿using Five_a_side.Exceptions;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using System;
 using System.Text.Json;
 
 namespace Five_a_side.Models
@@ -15,16 +13,17 @@ namespace Five_a_side.Models
         public Player RB { get; set; }
         public Player LF { get; set; }
         public Player RF { get; set; }
+
         public override string ToString()
         {
             return "ID: " + Id +
-            "\nName: " + Name +
-            "\nDescription: " + Description +
-            "\nGK: " + GK +
-            "\nLB: " + LB +
-            "\nRB: " + RB +
-            "\nLF: " + LF +
-            "\nRF: " + RF;
+                   "\nName: " + Name +
+                   "\nDescription: " + Description +
+                   "\nGK: " + GK +
+                   "\nLB: " + LB +
+                   "\nRB: " + RB +
+                   "\nLF: " + LF +
+                   "\nRF: " + RF;
         }
 
         public static List<Team> LoadTeamsFromFile(string file_local_teams_name)
@@ -94,17 +93,27 @@ namespace Five_a_side.Models
             return team;
         }
 
-        public bool Equals(Team other)
+        public override bool Equals(object obj)
         {
-            if (other == null) return false;
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+
+            var other = (Team)obj;
             return Id == other.Id &&
-                Name == other.Name &&
-                Description == other.Description &&
-                GK.Equals(other.GK) &&
-                LB.Equals(other.LB) &&
-                RB.Equals(other.RB) &&
-                LF.Equals(other.LF) &&
-                RF.Equals(other.RF);
+                   Name == other.Name &&
+                   Description == other.Description &&
+                   Equals(GK, other.GK) &&
+                   Equals(LB, other.LB) &&
+                   Equals(RB, other.RB) &&
+                   Equals(LF, other.LF) &&
+                   Equals(RF, other.RF);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Id, Name, Description, GK, LB, RB, LF, RF);
         }
     }
 }

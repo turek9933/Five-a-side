@@ -108,10 +108,10 @@ namespace Five_a_side.Models
             }
             else
             {
-                // Jeśli plik nie istnieje, zwracamy pustą listę
                 return new List<Player>();
             }
         }
+
         public static Player LoadPlayerFromFile(string filePath)
         {
             if (System.IO.File.Exists(filePath))
@@ -135,23 +135,34 @@ namespace Five_a_side.Models
         public static void SavePlayerToFile(Player data, string filePath)
         {
             string jsonData = JsonSerializer.Serialize(data);
-
             System.IO.File.WriteAllText(filePath, jsonData);
         }
 
         public static void SavePlayersToFile(List<Player> data, string filePath)
         {
             string jsonData = JsonSerializer.Serialize(data);
-
             System.IO.File.WriteAllText(filePath, jsonData);
         }
 
-        public bool Equals(Player other)
+        public override bool Equals(object obj)
         {
-            if (other == null) return false;
-            return Id == other.Id && Name == other.Name && Age == other.Age &&
-                   Nation == other.Nation && Club == other.Club && Value == other.Value;
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+
+            var other = (Player)obj;
+            return Id == other.Id &&
+                   Name == other.Name &&
+                   Age == other.Age &&
+                   Nation == other.Nation &&
+                   Club == other.Club &&
+                   Value == other.Value;
         }
 
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Id, Name, Age, Nation, Club, Value);
+        }
     }
 }

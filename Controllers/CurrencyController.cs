@@ -13,16 +13,16 @@ namespace Five_a_side.Controllers
     {
         private readonly string file_all_players_name = "./Data/players.json";
         private readonly string file_local_players_name = "./Data/local_players.json";
-        private readonly string file_local_teams_name = "./Data/local_teams.json";
         private readonly string file_temp_player_name = "./Data/temp_player.json";
+        private readonly string file_local_teams_name = "./Data/local_teams.json";
         private readonly string file_temp_team_name = "./Data/temp_team.json";
-
         private readonly IHttpClientFactory _clientFactory;
 
         public CurrencyController(IHttpClientFactory clientFactory)
         {
             _clientFactory = clientFactory;
         }
+
         private decimal valueInEuro(string value)
         {
             decimal multiplier = 1;
@@ -100,9 +100,9 @@ namespace Five_a_side.Controllers
                     return StatusCode((int)response.StatusCode, response.ReasonPhrase);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new CurrencyControllerException("Error during searching for Currencies in NBP API");
+                throw new CurrencyControllerException($"Error during searching for Currencies in NBP API: {ex.Message}");
             }
         }
 
@@ -130,15 +130,7 @@ namespace Five_a_side.Controllers
 
                 var rates = JsonSerializer.Deserialize<List<CurrencyRate>>(ratesElement.GetRawText());
 
-                CurrencyRate targetRate;
-                if (targetCurrencyCode == "PLN")
-                {
-                    targetRate = new CurrencyRate("Polski złoty", "PLN", 1);
-                }
-                else
-                {
-                    targetRate = rates.FirstOrDefault(r => r.Code == targetCurrencyCode);
-                }
+                CurrencyRate targetRate = targetCurrencyCode == "PLN" ? new CurrencyRate("Polski złoty", "PLN", 1) : rates.FirstOrDefault(r => r.Code == targetCurrencyCode);
 
                 if (targetRate == null)
                 {
@@ -162,7 +154,6 @@ namespace Five_a_side.Controllers
                 });
             }
         }
-
 
         [HttpGet("player-in-currency/{playerId}/{targetCurrencyCode}")]
         public async Task<IActionResult> ConvertPlayerValue(string playerId, string targetCurrencyCode)
@@ -190,15 +181,7 @@ namespace Five_a_side.Controllers
 
                 var rates = JsonSerializer.Deserialize<List<CurrencyRate>>(ratesElement.GetRawText());
 
-                CurrencyRate targetRate;
-                if (targetCurrencyCode == "PLN")
-                {
-                    targetRate = new CurrencyRate("Polski złoty", "PLN", 1);
-                }
-                else
-                {
-                    targetRate = rates.FirstOrDefault(r => r.Code == targetCurrencyCode);
-                }
+                CurrencyRate targetRate = targetCurrencyCode == "PLN" ? new CurrencyRate("Polski złoty", "PLN", 1) : rates.FirstOrDefault(r => r.Code == targetCurrencyCode);
 
                 if (targetRate == null)
                 {
@@ -247,15 +230,7 @@ namespace Five_a_side.Controllers
 
                 var rates = JsonSerializer.Deserialize<List<CurrencyRate>>(ratesElement.GetRawText());
 
-                CurrencyRate targetRate;
-                if (targetCurrencyCode == "PLN")
-                {
-                    targetRate = new CurrencyRate("Polski złoty", "PLN", 1);
-                }
-                else
-                {
-                    targetRate = rates.FirstOrDefault(r => r.Code == targetCurrencyCode);
-                }
+                CurrencyRate targetRate = targetCurrencyCode == "PLN" ? new CurrencyRate("Polski złoty", "PLN", 1) : rates.FirstOrDefault(r => r.Code == targetCurrencyCode);
 
                 if (targetRate == null)
                 {
@@ -280,7 +255,6 @@ namespace Five_a_side.Controllers
                 });
             }
         }
-
 
         [Authorize]
         [HttpGet("team-in-currency/{teamId}/{targetCurrencyCode}")]
@@ -309,15 +283,7 @@ namespace Five_a_side.Controllers
 
                 var rates = JsonSerializer.Deserialize<List<CurrencyRate>>(ratesElement.GetRawText());
 
-                CurrencyRate targetRate;
-                if (targetCurrencyCode == "PLN")
-                {
-                    targetRate = new CurrencyRate("Polski złoty", "PLN", 1);
-                }
-                else
-                {
-                    targetRate = rates.FirstOrDefault(r => r.Code == targetCurrencyCode);
-                }
+                CurrencyRate targetRate = targetCurrencyCode == "PLN" ? new CurrencyRate("Polski złoty", "PLN", 1) : rates.FirstOrDefault(r => r.Code == targetCurrencyCode);
 
                 if (targetRate == null)
                 {

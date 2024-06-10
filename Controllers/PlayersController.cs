@@ -9,10 +9,9 @@ namespace Five_a_side.Controllers
     [ApiController]
     public class PlayersController : ControllerBase
     {
-        string file_all_players_name = "./Data/players.json";
-        string file_local_players_name = "./Data/local_players.json";
-        string file_temp_player_name = "./Data/temp_player.json";
-
+        private readonly string file_all_players_name = "./Data/players.json";
+        private readonly string file_local_players_name = "./Data/local_players.json";
+        private readonly string file_temp_player_name = "./Data/temp_player.json";
         private readonly IHttpClientFactory _clientFactory;
 
         public PlayersController(IHttpClientFactory clientFactory)
@@ -29,11 +28,6 @@ namespace Five_a_side.Controllers
             }
         }
 
-        private Player findPlayer(List<Player> playerList, string playerId)
-        {
-            return playerList.FirstOrDefault(playerTemp => playerTemp.Id == playerId);
-        }
-
         private Player JsonSearchToPlayer(string jsonString)
         {
             using (JsonDocument doc = JsonDocument.Parse(jsonString))
@@ -44,41 +38,33 @@ namespace Five_a_side.Controllers
                 if (resultsElement.GetArrayLength() > 0)
                 {
                     JsonElement firstPlayerElement = resultsElement[0];
-
-                    string id = firstPlayerElement.GetProperty("id").GetString();
-                    string name = firstPlayerElement.GetProperty("name").GetString();
-                    int age = firstPlayerElement.GetProperty("age").GetString() == "-" ? 0 : int.Parse(firstPlayerElement.GetProperty("age").GetString());
-                    string nation = firstPlayerElement.GetProperty("nationalities")[0].GetString();
-                    string club = firstPlayerElement.GetProperty("club").GetProperty("name").GetString() == "---" ? "Retired" : firstPlayerElement.GetProperty("club").GetProperty("name").GetString();
-
-                    string marketValue = firstPlayerElement.GetProperty("marketValue").GetString();
-                    marketValue = marketValue == "-" ? "€0" : marketValue;
-
-                    return new Player(id, name, age, nation, club, marketValue);
+                    return new Player(
+                        firstPlayerElement.GetProperty("id").GetString(),
+                        firstPlayerElement.GetProperty("name").GetString(),
+                        firstPlayerElement.GetProperty("age").GetString() == "-" ? 0 : int.Parse(firstPlayerElement.GetProperty("age").GetString()),
+                        firstPlayerElement.GetProperty("nationalities")[0].GetString(),
+                        firstPlayerElement.GetProperty("club").GetProperty("name").GetString() == "---" ? "Retired" : firstPlayerElement.GetProperty("club").GetProperty("name").GetString(),
+                        firstPlayerElement.GetProperty("marketValue").GetString() == "-" ? "€0" : firstPlayerElement.GetProperty("marketValue").GetString()
+                    );
                 }
             }
             return null;
         }
+
         private Player JsonIdToPlayer(string jsonString)
         {
             using (JsonDocument doc = JsonDocument.Parse(jsonString))
             {
                 JsonElement root = doc.RootElement;
-
-                string id = root.GetProperty("id").GetString();
-                string name = root.GetProperty("name").GetString();
-                int age = root.GetProperty("age").GetString() == "-" ? 0 : int.Parse(root.GetProperty("age").GetString());
-                string nation = root.GetProperty("citizenship")[0].GetString();
-                string club = root.GetProperty("club").GetProperty("name").GetString() == "---" ? "Retired" : root.GetProperty("club").GetProperty("name").GetString();
-
-                string marketValue = "€0";
-                if (club != "Retired")
-                {
-                    marketValue = root.GetProperty("marketValue").GetString();
-                    marketValue = marketValue == "-" ? "€0" : marketValue;
-                }
-
-                return new Player(id, name, age, nation, club, marketValue);
+                var club = root.GetProperty("club").GetProperty("name").GetString() == "---" ? "Retired" : root.GetProperty("club").GetProperty("name").GetString();
+                return new Player(
+                    root.GetProperty("id").GetString(),
+                    root.GetProperty("name").GetString(),
+                    root.GetProperty("age").GetString() == "-" ? 0 : int.Parse(root.GetProperty("age").GetString()),
+                    root.GetProperty("citizenship")[0].GetString(),
+                    club,
+                    club == "Retired" ? "€0" : (root.GetProperty("marketValue").GetString() == "-" ? "€0" : root.GetProperty("marketValue").GetString())
+                );
             }
         }
 
@@ -92,10 +78,6 @@ namespace Five_a_side.Controllers
                 {
                     var jsonString = await response.Content.ReadAsStringAsync();
                     Player foundPlayer = JsonSearchToPlayer(jsonString);
-
-                    Console.WriteLine(foundPlayer);
-                    Console.WriteLine(player);
-
                     return foundPlayer != null && foundPlayer.Equals(player);
                 }
                 else
@@ -103,9 +85,9 @@ namespace Five_a_side.Controllers
                     return false;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new PlayersControllerException("Error during getting player by ID from transfermarkt API");
+                throw new PlayersControllerException($"Error during getting player by ID from transfermarkt API: {ex.Message}");
             }
         }
 
@@ -132,17 +114,21 @@ namespace Five_a_side.Controllers
                     return StatusCode((int)response.StatusCode, response.ReasonPhrase);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new PlayerException("Error during searching for player in transfermarkt API");
+                throw new PlayerException($"Error during searching for player in transfermarkt API: {ex.Message}");
             }
         }
 
-
         [HttpGet("temp-player")]
-        public Player GetTempPlayer()
+        public IActionResult GetTempPlayer()
         {
-            return Player.LoadPlayerFromFile(Path.Combine(Directory.GetCurrentDirectory(), file_temp_player_name));
+            Player tempPlayer = Player.LoadPlayerFromFile(file_temp_player_name);
+            if (tempPlayer == null)
+            {
+                return NotFound("No temporary player found.");
+            }
+            return Ok(tempPlayer);
         }
 
         [HttpPut("temp-player")]
@@ -169,8 +155,8 @@ namespace Five_a_side.Controllers
         [HttpPost("save-temp-player")]
         public IActionResult SavePlayer()
         {
-            Player temp_player = Player.LoadPlayerFromFile(Path.Combine(Directory.GetCurrentDirectory(), file_temp_player_name));
-            if (temp_player == null)
+            Player tempPlayer = Player.LoadPlayerFromFile(file_temp_player_name);
+            if (tempPlayer == null)
             {
                 return BadRequest("No player loaded to save. Put player first!");
             }
@@ -179,13 +165,13 @@ namespace Five_a_side.Controllers
 
             if (!players.Any(p => p.Id == tempPlayer.Id))
             {
-                players.Add(temp_player);
-                Player.SavePlayersToFile(players, Path.Combine(Directory.GetCurrentDirectory(), file_local_players_name));
-                return Ok($"Player:\n\n{temp_player}\n\nsaved successfully.");
+                players.Add(tempPlayer);
+                Player.SavePlayersToFile(players, file_local_players_name);
+                return Ok($"Player:\n\n{tempPlayer}\n\nsaved successfully.");
             }
             else
             {
-                return Ok($"Player:\n\n{temp_player}\n\nalready saved.");
+                return Ok($"Player:\n\n{tempPlayer}\n\nalready saved.");
             }
         }
 
@@ -206,9 +192,9 @@ namespace Five_a_side.Controllers
                     return StatusCode((int)response.StatusCode, response.ReasonPhrase);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new PlayerException("Error during getting player by ID from transfermarkt API");
+                throw new PlayerException($"Error during getting player by ID from transfermarkt API: {ex.Message}");
             }
         }
 
@@ -224,7 +210,7 @@ namespace Five_a_side.Controllers
             }
 
             List<Player> updatedPlayers = players.Where(p => !p.Equals(playerToDelete)).ToList();
-            Player.SavePlayersToFile(updatedPlayers, Path.Combine(Directory.GetCurrentDirectory(), file_local_players_name));
+            Player.SavePlayersToFile(updatedPlayers, file_local_players_name);
 
             return Ok($"Player:\n{data}\ndeleted successfully.");
         }
@@ -242,7 +228,7 @@ namespace Five_a_side.Controllers
             }
 
             List<Player> updatedPlayers = players.Where(p => p.Id != playerIdString).ToList();
-            Player.SavePlayersToFile(updatedPlayers, Path.Combine(Directory.GetCurrentDirectory(), file_local_players_name));
+            Player.SavePlayersToFile(updatedPlayers, file_local_players_name);
 
             return Ok($"Player with ID {player_id} deleted successfully.");
         }

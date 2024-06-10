@@ -1,6 +1,4 @@
 ﻿using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
-using Five_a_side.Exceptions;
 
 namespace Five_a_side.Models
 {
@@ -21,5 +19,30 @@ namespace Five_a_side.Models
             Code = code;
             Mid = mid;
         }
+
+        public override string ToString()
+        {
+            return $"{Currency} ({Code}): {Mid}";
+        }
+
+        /*
+        public override bool Equals(object obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+
+            var other = (CurrencyRate)obj;
+            return Currency == other.Currency &&
+                   Code == other.Code &&
+                   Mid == other.Mid;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Currency, Code, Mid);
+        }
+        */
     }
 }

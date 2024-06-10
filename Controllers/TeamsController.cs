@@ -11,18 +11,19 @@ namespace Five_a_side.Controllers
     [ApiController]
     public class TeamsController : Controller
     {
-        string file_all_players_name = "./Data/players.json";
-        string file_local_teams_name = "./Data/local_teams.json";
-        string file_local_players_name = "./Data/local_players.json";
-
-        string file_temp_team_name = "./Data/temp_team.json";
+        private readonly string file_all_players_name = "./Data/players.json";
+        private readonly string file_local_players_name = "./Data/local_players.json";
+        private readonly string file_local_teams_name = "./Data/local_teams.json";
+        private readonly string file_temp_team_name = "./Data/temp_team.json";
 
         private readonly IHttpClientFactory _clientFactory;
+
         public TeamsController(IHttpClientFactory clientFactory)
         {
             _clientFactory = clientFactory;
             InitializeTempTeamFile();
         }
+
         private void InitializeTempTeamFile()
         {
             if (!System.IO.File.Exists(file_temp_team_name) || new FileInfo(file_temp_team_name).Length == 0)
@@ -42,7 +43,6 @@ namespace Five_a_side.Controllers
             }
         }
 
-
         private int GetNextAvailableTeamId(List<Team> teamsList)
         {
             int newId = 0;
@@ -53,7 +53,7 @@ namespace Five_a_side.Controllers
             return newId;
         }
 
-        private bool goodTeamId(Team team, List<Team> teamsList)
+        private bool GoodTeamId(Team team, List<Team> teamsList)
         {
             if (team.Id < 0 || teamsList.Any(t => t.Id == team.Id))
             {
@@ -63,7 +63,7 @@ namespace Five_a_side.Controllers
             return !teamsList.Any(t => t.Id == team.Id);
         }
 
-        private bool goodPlayersInTeam(Team team)
+        private bool GoodPlayersInTeam(Team team)
         {
             List<Player> players = Player.LoadPlayersFromFile(file_local_players_name);
 
@@ -75,7 +75,7 @@ namespace Five_a_side.Controllers
             return result;
         }
 
-        private async Task<bool> goodGK(Player gk)
+        private async Task<bool> GoodGK(Player gk)
         {
             bool result = false;
             var client = _clientFactory.CreateClient("TransfermarktClient");
@@ -115,27 +115,26 @@ namespace Five_a_side.Controllers
                     throw new TeamsControllerException($"Looking for GK Error. Code: {response.StatusCode} Reason: {response.ReasonPhrase}");
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                throw new TeamsControllerException("Error during checking if GK player is GK player by ID from transfermarkt API");
+                throw new TeamsControllerException($"Error during checking if GK player is GK player by ID from transfermarkt API: {ex.Message}");
             }
             return result;
         }
 
-        private async Task<bool> goodTeamData(Team team)
+        private async Task<bool> GoodTeamData(Team team)
         {
             List<Team> teamsList = Team.LoadTeamsFromFile(file_local_teams_name);
 
-            goodTeamId(team, teamsList);
+            GoodTeamId(team, teamsList);
 
-            if (goodPlayersInTeam(team))
+            if (GoodPlayersInTeam(team))
             {
-                return await goodGK(team.GK);
+                return await GoodGK(team.GK);
             }
 
             return false;
         }
-
 
         [HttpGet("")]
         public IEnumerable<Team> Get()
@@ -154,15 +153,14 @@ namespace Five_a_side.Controllers
             return Ok(tempTeam);
         }
 
-
         [HttpPut("temp-team")]
         public async Task<IActionResult> PutTempTeam([FromBody] Team team)
         {
             List<Team> teamsList = Team.LoadTeamsFromFile(file_local_teams_name);
 
-            goodTeamId(team, teamsList);
+            GoodTeamId(team, teamsList);
 
-            if (await goodTeamData(team))
+            if (await GoodTeamData(team))
             {
                 Team.SaveTeamToFile(team, file_temp_team_name);
                 return Ok("Temporary team saved successfully.");
@@ -172,9 +170,6 @@ namespace Five_a_side.Controllers
                 return BadRequest("Invalid team data.");
             }
         }
-
-
-
 
         [HttpPost("save-temp-team")]
         public IActionResult SaveTempTeam()
@@ -198,7 +193,6 @@ namespace Five_a_side.Controllers
                 return Ok("Team with this ID already exists.");
             }
         }
-
 
         [HttpGet("get-team/{team_id}")]
         public IActionResult GetTeamById(int team_id)
